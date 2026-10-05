@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام مخالفات الهلال الأحمر - المطور</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0; font-family: 'Cairo', sans-serif;
+            background-image: url('https://raw.githubusercontent.com/xhhp1/medicaljpg/main/medic.jpg.jpg');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px;
+        }
+        .container {
+            max-width: 1000px; width: 100%; background: rgba(255, 255, 255, 0.98);
+            padding: 25px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border-top: 8px solid #8B0000; box-sizing: border-box;
+        }
+        h2 { text-align: center; color: #8B0000; font-size: 26px; margin-bottom: 20px; font-weight: 900; }
+        .layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+        @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+        .form-group { margin-bottom: 15px; text-align: right; }
+        label { display: block; margin-bottom: 5px; font-weight: 700; font-size: 15px; color: #333; }
+        input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #bbb; font-family: 'Cairo'; font-size: 14px; box-sizing: border-box; }
+        select[multiple] { height: 350px; }
+        .info-box { background: #fff5f5; border: 2px solid #8B0000; border-radius: 12px; padding: 15px; height: fit-content; position: sticky; top: 10px; }
+        .fine-manual-box { background: #fff0f0; padding: 10px; border-radius: 10px; border: 1px solid #8B0000; margin-top: 10px; }
+        .btn-group { display: flex; gap: 10px; margin-top: 25px; }
+        button { flex: 1; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: 900; cursor: pointer; transition: 0.3s; font-size: 16px; }
+        .btn-gen { background: #8B0000; } .btn-copy { background: #2e7d32; }
+        .output { margin-top: 25px; padding: 20px; background: #fdfdfd; border: 2px dashed #8B0000; border-radius: 10px; white-space: pre-wrap; font-size: 15px; font-weight: 700; color: #222; text-align: right; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📋 لوحة تحكم مخالفات الهلال الأحمر</h2>
+    <div class="layout">
+        <div class="main-side">
+            <div class="form-group">
+                <label> كوبي يوزر المسعف:</label>
+                <input id="id" type="number" placeholder="197860519980302337 مثال...">
+            </div>
+            <div class="form-group">
+                <label>👨‍⚕️ اسم المسعف وكوده (للفصل فقط):</label>
+                <input id="rescuerName" placeholder=" محمد الصواف[E-248]  ...">
+            </div>
+            <div class="form-group">
+                <label>🔍 بحث سريع:</label>
+                <input id="search" placeholder="ابحث عن المخالفة..." onkeyup="filterList()">
+            </div>
+            <div class="form-group">
+                <label>🚫 قائمة المخالفات (اختيار متعدد):</label>
+                <select id="violation" multiple onchange="updateUI()"></select>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <span style="color:#8B0000; font-weight:900;">⚖️ الجزاء المقرر حرفياً</span>
+            <hr>
+            <div id="hover-info">اختر مخالفة لعرض التفاصيل...</div>
+            <div class="fine-manual-box">
+                <label style="color: #8B0000;">💰 إجمالي الغرامة:</label>
+                <input id="totalFineManual" type="number" placeholder="المبلغ المالي...">
+            </div>
+        </div>
+    </div>
+
+    <div class="layout" style="grid-template-columns: 1fr 1fr; margin-top:15px;">
+        <div class="form-group" id="levelGroup">
+            <label>📊 درجة الإنذار:</label>
+            <select id="level">
+                <option value="شـفـهـي ">إنذار شـفـهـي </option>
+                <option value="أول" selected>إنذار أول</option>
+                <option value="ثاني">إنذار ثاني</option>
+                <option value="نهائي بالفصل">إنذار نهائي بالفصل </option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>✍️ توقيع المسؤول:</label>
+            <select id="signature">
+                <option value="field">اشراف ميداني</option>
+                <option value="general">اشراف عام</option>
+                <option value="deputy">نائب مساعد القائد</option>
+                <option value="cdeputy">مساعد القائد</option>
+                <option value="bdeputy">نائب القائد</option>
+				<option value="bddeputy">كبار المشرفين</option>
+                <option value="adeputy">قائد الهلال الاحمر</option>
+            </select>
+        </div>
+    </div>
+
+<div class="btn-group">
+        <button class="btn-gen" onclick="generate()">تجهيز التقرير النهائي</button>
+        <button class="btn-copy" onclick="copyText()">نسخ القرار للديسكورد</button>
+    </div>
+
+    <div id="out" class="output"></div>
+
+    <div style="margin-top: 25px; text-align: center; border-top: 1px solid #ddd; padding-top: 15px; color: #555; font-size: 13px;">
+        <p style="margin: 5px 0;">📜 حقوق الملكية والتطوير محفوظة</p>
+        <div style="display: flex; justify-content: center; gap: 20px; font-weight: 700;">
+            <span>👨‍⚕️ الاشراف العام / عمر محمد</span>
+            <span>👨‍⚕️ المسعف / محمد الصواف</span>
+        </div>
+    </div>
+</div>
+
+<script>
+const data = {
+    // --- مخالفات الفصل (غرامة 1,000,000) ---
+    "استقالة فترة تدريب": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم", type: "فصل" },
+    "صدم المتعمد لغرض الانعاش": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم + نهائي من الهلال الاحمر", type: "فصل" },
+    "عدم احترام القيادة / المشرفين": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم", type: "فصل" },
+    "استقالة قبل الرجوع من الاجازة الداخلية": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم", type: "فصل" },
+    "تهرب وظيفي": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم", type: "فصل" },
+    "تخريب سيناريو": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم + نهائي من الهلال الاحمر", type: "فصل" },
+    "اعتراض على قرار قيادة": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم", type: "فصل" },
+    "سب وقذف": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم + نهائي من الهلال الاحمر + باند نهائي", type: "فصل" },
+    "اللعن أو الإساءات اللفظية بأي شكل من الأشكال": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم + نهائي من الهلال الاحمر + سجن نهائي", type: "فصل" },
+    "تدبيل انعاش": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم + نهائي من الهلال الاحمر + باند نهائي وتصفير", type: "فصل" },
+    "تخريب بوظيفة الهلال الاحمر": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم + نهائي من الهلال الاحمر + سجن نهائي", type: "فصل" },
+    "الاجرام بوظيفة الهلال الاحمر": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم + نهائي من الهلال الاحمر + سجن نهائي", type: "فصل" },
+    "استخدام الرتبة للمصلحة الشخصية": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم + نهائي من الهلال الاحمر ", type: "فصل" },
+    "عدم العودة للوظيفة بعد انتهاء اجازة خارجية": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 5 ايام (خاص بمسؤول الترقيات)", type: "فصل" },
+    "دخول غير شرعي": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم + نهائي من الهلال الاحمر", type: "فصل" },
+    "تلفيت من الدسكورد": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم", type: "فصل" },
+    "عدم تواجد مسؤول ترقيات": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم", type: "فصل" },
+    "عدم تواجد مشرفين": { fine: 1000000, penalty: "انـذار نهائي بكسر رتبة + غرامة بقيمة 1,000,000", type: "فصل" },
+    "كثرة المخالفات": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم", type: "فصل" },
+    "رتبة عليا في مدينة اخرى": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم", type: "فصل" },
+    "مخالفة قوانين المقاطعة": { fine: 1000000, penalty: "فصل + غرامة بقيمة 1,000,000 + منع من التوظيف 14 يوم", type: "فصل" },
+    "صدم مواطنين بشكل متعمد ومستمر": { fine: 1000000, penalty: "كسر رتبة + انـذار نهائي بالفصل + غرامة مليون", type: "فصل" },
+
+    // --- مخالفات الـ 750 الف (autoLevel: اول) ---
+    "تشويه سمعة الهلال الاحمر بأي شكل من الأشكال": { fine: 750000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 750 الف", autoLevel: "اول" },
+    "الانتداب بدون اخذ الاذن": { fine: 750000, penalty: "انـذار اول + غرامة بقيمة 750 الف ", autoLevel: "اول" },
+    "حضور توظيف بدون اخذ الاذن من القيادة": { fine: 750000, penalty: "انـذار اول + غرامة بقيمة 750 الف", autoLevel: "اول" },
+    "مضايقة الكادر النسائي بأي شكل من الأشكال": { fine: 750000, penalty: "كسر رتبة + انـذار اول + غرامة بقيمة 750 الف", autoLevel: "اول" },
+    "الاستهبال بالميدان": { fine: 750000, penalty: "كسر رتبة + انـذار اول + غرامة بقيمة 750 الف ", autoLevel: "اول" },
+    "حمل ممنوعات واسلحة": { fine: 750000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 750 الف + سحب الممنوعات", autoLevel: "اول" },
+    "المباشرة في المجرمين قبل العساكر": { fine: 750000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 750 الف", autoLevel: "اول" },
+    "رفض استلام أو تسليـم مهام طاقم العمليات": { fine: 750000, penalty: "انـذار اول + سحب رول العمليات + تأخير ترقية + غرامة بقيمة 750 الف", autoLevel: "اول" },
+
+    // --- مخالفات الـ 500 الف (autoLevel: اول) ---
+    "مباشرة في مركبة غير مخصصه لك": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "الاستهبال في روم العمليات": { fine: 500000, penalty: "انـذار اول + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "الدخول لروم الكادر النسائي": { fine: 500000, penalty: "انـذار اول + غرامة بقيمة 500 الف ", autoLevel: "اول" },
+    "تظليل مركبة حكومية": { fine: 500000, penalty: "انـذار اول + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "الدخول لموجة الرقابة": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "دخول برنامج الدولة لطلب الانعاش وقت الاجازة": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف ", autoLevel: "اول" },
+    "المباشرة في المجرمين بدون اذن العساكر (داخل الميناء)": { fine: 500000, penalty: "انـذار اول + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "عدم الإلتزام بقوانين الإجازة الداخلية": { fine: 500000, penalty: "انـذار اول + غرامة بقيمة 500 الف ", autoLevel: "اول" },
+    "التوجه لكراج التعديل والتزويد بدون اذن": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "التوجه لمعرض السيارات بدون اذن": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "المباشرة في موقع غير آمن": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "اهانة اي شخص بالمقاطعة": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "التلاعب في دفتر الحضور": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف ", autoLevel: "اول" },
+      "طلب ترقية": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف ", autoLevel: "اول" },
+    "التلاعب على مسؤولين الترقيات": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف ", autoLevel: "اول" },
+    "التدخل في الشؤون الادارية": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "الرد بطريقة غير مناسبة بالموجه": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "كثرة الشكاوي عليه": { fine: 500000, penalty: "انـذار نهائي بالفصل + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "التأخر في العودة للوظيفة بعد انتهاء الاجازة الداخلية": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "سجن رقابي بوظيفة الهلال الأحمر": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف ", autoLevel: "اول" },
+    "الأفك او الغفوة اكثر من 15 دقيقة": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "الخروج مشتركة": { fine: 500000, penalty: "انـذار أول + كسر رتبة + غرامة بقيمة 500 الف ", autoLevel: "اول" },
+    "عدم طلب كود 3": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف ", autoLevel: "اول" },
+    "اسلوب غير لائق": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "التدخل في شؤون القطاعات الاخرى": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "دخول استنفار أمني أو المباشرة بدون اذن": { fine: 500000, penalty: "انـذار اول + تأخير ترقية + غرامة بقيمة 500 الف", autoLevel: "اول" },
+
+    // --- مخالفات الـ 300 الف (autoLevel: اول) ---
+    "التأخير بالوصول للمسقطين": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "مخالفة قوانين التكت": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "التعديل على لبس الهلال الاحمر": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "عدم اعطاء الكود الميداني": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "عدم المباشرة بعد مرور 5 دقائق من طلب كود 8": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "عدم التزام ببروتوكولات الراديو": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "اثارة الجدل في الشات العام": { fine: 500000, penalty: "انـذار اول + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "ازعاج منسوبي الشؤون الإدارية": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "رفض توجيه العمليات": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "مباشرة بدون تسجيل دخول": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف ", autoLevel: "اول" },
+    "مباشرة في موقع غير موجه لك": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "المباشرة بدون الدخول للموجة": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "عدم تسليم العمليات عند الخروج": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "منشن الرقابة في رسائل الهلال الاحمر": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "اهمال الراديو": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "عدم الإلتزام في قوانين الهلال الأحمر": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "عدم طلب كود 8": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "الكتابة أثناء المنع او التنقيط": { fine: 300000, penalty: "انـذار اول + غرامة بقيمة 300 الف", autoLevel: "اول" },
+    "الاعتراض على مخالفة صحيحة": { fine: 300000, penalty: "انـذار اول + غرامة دبل المخالفة الاساسية", autoLevel: "اول" },
+
+    // --- مخالفات الـ 200 الف (autoLevel: اول) ---
+    "قيادة غير واقعية": { fine: 200000, penalty: "انـذار اول + غرامة بقيمة 200 الف", autoLevel: "اول" },
+    "اهمال مركبة": { fine: 200000, penalty: "انـذار اول + غرامة بقيمة 200 الف", autoLevel: "اول" },
+    "تسجيل خروج بدون ابلاغ طاقم العمليات": { fine: 200000, penalty: "انـذار اول + غرامة بقيمة 200 الف", autoLevel: "اول" },
+    "عدم تغيير الاسم في الفايف ام": { fine: 200000, penalty: "انـذار اول + غرامة بقيمة 200 الف", autoLevel: "اول" },
+    "فتح تكت تظلم غير صحيح": { fine: 500000, penalty: "انـذار اول + غرامة بقيمة 500 الف", autoLevel: "اول" },
+    "اركاب مواطن معه في سيارة الاسعاف": { fine: 200000, penalty: "انـذار اول + غرامة بقيمة 200 الف", autoLevel: "اول" },
+    "عدم الحضور للأستدعاء": { fine: 200000, penalty: "انـذار اول + غرامة بقيمة 200 الف + مخالفة سبب الاستدعاء", autoLevel: "اول" },
+    "التواجد في روم العمليات اكثر من 2 دقائق": { fine: 200000, penalty: "انـذار اول + غرامة بقيمة 200 الف", autoLevel: "اول" }
+};
+
+
+const signatures = { 
+    field: "<@&1071933366934458489>", general: "<@&1164572574391476264>", deputy: "<@&1153823182281777293>", 
+    cdeputy: "<@&1092667422902862004>", bdeputy: "<@&1071933358503903242>", adeputy: "<@&1071933359086911561>"  , bddeputy:"<@&1196864372044210267>"
+};
+
+function loadList(list){
+    const select = document.getElementById("violation"); select.innerHTML = "";
+    Object.keys(list).forEach(k => {
+        let opt = document.createElement("option"); opt.value = k; opt.textContent = k;
+        opt.onclick = () => document.getElementById("hover-info").innerHTML = `<b>⚖️ الجزاء المقرر:</b><br>${list[k].penalty}`;
+        select.appendChild(opt);
+    });
+}
+loadList(data);
+
+function filterList(){
+    let q = document.getElementById("search").value.toLowerCase();
+    let res = {}; for(let k in data) if(k.toLowerCase().includes(q)) res[k] = data[k];
+    loadList(res);
+}
+
+function updateUI(){
+    let sel = Array.from(document.getElementById("violation").selectedOptions).map(o => o.value);
+    if(!sel.length) return;
+    let autoTotal = 0;
+    sel.forEach(v => { if(data[v]) autoTotal += data[v].fine; });
+    document.getElementById("totalFineManual").value = autoTotal;
+    let isFasl = sel.some(v => data[v].type === "فصل");
+    document.getElementById("levelGroup").style.display = isFasl ? "none" : "block";
+}
+
+function generate() {
+    let idValue = document.getElementById("id").value.trim();
+    let nameValue = document.getElementById("rescuerName").value.trim();
+    let sel = Array.from(document.getElementById("violation").selectedOptions).map(o => o.value);
+    let lv = document.getElementById("level").value.trim(); 
+    let finalFine = document.getElementById("totalFineManual").value;
+
+    if(!idValue) return alert("❌ الـ Discord ID مطلوب!");
+    if(!sel.length) return alert("❌ اختر مخالفة!");
+
+    let isFasl = sel.some(v => data[v].type === "فصل");
+    let hasPromoDelay = sel.some(v => data[v].penalty.includes("تأخير ترقية"));
+    let hasRankBreak = sel.some(v => data[v].penalty.includes("كسر رتبة"));
+    let hasConfiscation = sel.some(v => data[v].penalty.includes("سحب الممنوعات"));
+    
+    let penaltyResult = "";
+
+    if (isFasl) {
+        let faslParts = ["فصل من القطـاع", "غرامة مالية بقيمة ( 1,000,000 )", "منع من التوظيف 14 يوم"];
+        if (sel.some(v => data[v].penalty.includes("نهائي من الهلال الاحمر"))) faslParts.push("نهائي من الهلال الاحمر");
+        if (sel.some(v => data[v].penalty.includes("باند نهائي"))) faslParts.push("باند نهائي");
+        if (sel.some(v => data[v].penalty.includes("سجن"))) faslParts.push("سجن نهائي");
+        penaltyResult = faslParts.join(" + ");
+    } 
+    else if (lv === "شـفـهـي") {
+        penaltyResult = "انـذار شـفـهـي";
+    } 
+    else {
+        let parts = [];
+        parts.push(`انـذار ${lv}`);
+        if (hasRankBreak) parts.push("كسر رتبة");
+        if (hasPromoDelay) parts.push("تأخير ترقية");
+        
+        if (Number(finalFine) > 0) {
+            let formattedFine = Number(finalFine).toLocaleString();
+            parts.push(`غرامة مالية بقيمة ( ${formattedFine} )`);
+        }
+        if (hasConfiscation) parts.push("سحب الممنوعات");
+        penaltyResult = parts.join(" + ");
+    }
+
+    let personSection = isFasl ? `<@${idValue}>\n${nameValue}` : `<@${idValue}>`;
+    let warning = (!isFasl && lv !== "شـفـهـي" && Number(finalFine) > 0) ? "\n`مهلة 24 ساعة لفتح تكت مساعدة من القيادة للسداد تجنباً لتدبيلها`" : "";
+
+    // التحكم في المسافة قبل "توقيع" فقط
+    let signatureSpacing = (lv === "شـفـهـي" || isFasl) ? "\n\n" : "\n\n\n";
+
+    let out = `***قرار صادر من <@&1071933370407325807>    ينص على :
+
+
+${penaltyResult}  للــمــســعـــف :
+
+
+${personSection}
+
+
+\`وذلك بسبب ( ${sel.join(" + ")} )\`
+${warning}${signatureSpacing}توقـيـع :
+${signatures[document.getElementById("signature").value]} 
+
+
+إعتماد 
+<@&1071933358503903242> 
+<@813079786855464961>   
+
+<@&1071933359086911561>***
+<@1162195276514197527>`;
+
+    document.getElementById("out").innerText = out;
+}
+
+function copyText(){ 
+    const text = document.getElementById("out").innerText;
+    if(!text) return alert("جهز التقرير أولاً!");
+    navigator.clipboard.writeText(text).then(() => alert("تم النسخ بنجاح ✅")); 
+}
+document.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (
+    (e.ctrlKey && e.key.toLowerCase() === 'u') ||
+    (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i') ||
+    (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'j') ||
+    (e.ctrlKey && e.key.toLowerCase() === 's')
+  ) {
+    e.preventDefault();
+  }
+});
+</script>
+</body>
+</html>
